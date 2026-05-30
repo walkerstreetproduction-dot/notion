@@ -19,6 +19,17 @@ type TesseractResult = {
   };
 };
 
+type TesseractWorker = {
+  setParameters: (parameters: Record<string, string>) => Promise<void>;
+  recognize: (image: Blob) => Promise<TesseractResult>;
+  terminate: () => Promise<void>;
+};
+
+type TesseractModule = {
+  createWorker: (language: string) => Promise<TesseractWorker>;
+  PSM?: { SINGLE_BLOCK?: string };
+};
+
 const MIN_SCAN_WIDTH = 1400;
 const MAX_SCAN_WIDTH = 2200;
 
@@ -98,7 +109,6 @@ async function preprocessImage(file: File) {
 
   return { blob, previewUrl: URL.createObjectURL(blob), width, height };
 }
-
 
 function hasChapterPagePatterns(text: string) {
   const likelyRows = text.split('\n').filter((line) => /[A-Za-z].*\b\d{1,4}\s*$/.test(line.trim()));
@@ -187,7 +197,7 @@ export default function AddBookPage() {
       setProcessedPreviewUrl(processed.previewUrl);
       setProcessedSize(`${processed.width} × ${processed.height}`);
       setOcrStatus('Scanning processed image… this can take a minute on phones.');
-      const Tesseract = await import('tesseract.js') as any;
+      const Tesseract = await import('tesseract.js') as unknown as TesseractModule;
       const worker = await Tesseract.createWorker('eng');
       try {
         await worker.setParameters({
