@@ -8,7 +8,7 @@ import type { ChangeEvent } from 'react';
 import { Button, Card } from '@/components/ui';
 import { generateSchedule, parseChapters, todayIso, uid } from '@/lib/reading';
 import { useAppData } from '@/lib/storage';
-import { Chapter } from '@/lib/types';
+import type { Chapter } from '@/lib/types';
 
 type DraftChapter = Omit<Chapter, 'id' | 'bookId'> & { key: string };
 
@@ -146,6 +146,8 @@ export default function AddBookPage() {
     setProcessedSize('');
     setOcrStatus('Image ready. Review the preview, then tap “Scan this image”.');
     setScanWarning('');
+    setExtractMessage('');
+    setChapters([]);
     setOcrConfidence(null);
   };
 
@@ -158,6 +160,9 @@ export default function AddBookPage() {
     setProcessedSize('');
     setOcrStatus('Choose or take a new photo.');
     setScanWarning('');
+    setExtractMessage('');
+    setChapters([]);
+    setOcrText('');
     setOcrConfidence(null);
     setFileInputKey((key) => key + 1);
   };
@@ -178,19 +183,22 @@ export default function AddBookPage() {
       setOcrStatus('Scanning processed image… this can take a minute on phones.');
       const Tesseract = await import('tesseract.js') as any;
       const worker = await Tesseract.createWorker('eng');
-      await worker.setParameters({
-        tessedit_pageseg_mode: Tesseract.PSM?.SINGLE_BLOCK || '6',
-        preserve_interword_spaces: '1',
-      });
-      const result = await worker.recognize(processed.blob) as TesseractResult;
-      await worker.terminate();
-      const text = result.data.text.trim();
-      const confidence = typeof result.data.confidence === 'number' ? Math.round(result.data.confidence) : null;
-      setOcrText(text);
-      setOcrConfidence(confidence);
-      setOcrStatus('OCR complete. Review and edit the text before extracting chapter rows.');
-      if (looksMessy(text, confidence ?? undefined)) {
-        setScanWarning('Scan looks unclear. Please retake photo or edit text manually.');
+      try {
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM?.SINGLE_BLOCK || '6',
+          preserve_interword_spaces: '1',
+        });
+        const result = await worker.recognize(processed.blob) as TesseractResult;
+        const text = result.data.text.trim();
+        const confidence = typeof result.data.confidence === 'number' ? Math.round(result.data.confidence) : null;
+        setOcrText(text);
+        setOcrConfidence(confidence);
+        setOcrStatus('OCR complete. Review and edit the text before extracting chapter rows.');
+        if (looksMessy(text, confidence ?? undefined)) {
+          setScanWarning('Scan looks unclear. Please retake photo or edit text manually.');
+        }
+      } finally {
+        await worker.terminate();
       }
     } catch (error) {
       setScanWarning(error instanceof Error ? error.message : 'Could not scan this image. Please retake photo or paste text manually.');
