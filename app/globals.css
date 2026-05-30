@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+body { @apply bg-stone-50 text-ink antialiased; }
+input, textarea, select { @apply w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base outline-none ring-sage/20 transition focus:ring-4; }
+label { @apply text-sm font-semibold text-stone-700; }
