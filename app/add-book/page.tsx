@@ -99,6 +99,12 @@ async function preprocessImage(file: File) {
   return { blob, previewUrl: URL.createObjectURL(blob), width, height };
 }
 
+
+function hasChapterPagePatterns(text: string) {
+  const likelyRows = text.split('\n').filter((line) => /[A-Za-z].*\b\d{1,4}\s*$/.test(line.trim()));
+  return likelyRows.length > 0;
+}
+
 function looksMessy(text: string, confidence?: number) {
   const compact = text.replace(/\s/g, '');
   if (compact.length < 20) return true;
@@ -209,8 +215,13 @@ export default function AddBookPage() {
   };
 
   const detectChapters = () => {
+    if (!hasChapterPagePatterns(ocrText)) {
+      setExtractMessage('Could not detect chapters clearly. Please edit the text or add rows manually.');
+      setChapters([]);
+      return;
+    }
     const detected = parseChapters(ocrText, totalPages).map((chapter) => ({ ...chapter, key: uid() }));
-    if (!detected.length) {
+    if (!detected.length || detected.every((chapter) => chapter.title.toLowerCase() === 'reading')) {
       setExtractMessage('Could not detect chapters clearly. Please edit the text or add rows manually.');
       setChapters([]);
       return;

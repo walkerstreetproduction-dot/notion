@@ -44,6 +44,10 @@ export function parseChapters(text: string, totalPages?: number): Omit<Chapter, 
     parsed.push({ title, section: currentSection, startPage: page });
   }
 
+  if (parsed.length === 0 && totalPages) {
+    parsed.push({ title: 'Reading', section: '', startPage: 1 });
+  }
+
   return parsed.map((chapter, index) => {
     const next = parsed[index + 1]?.startPage;
     const endPage = next ? Math.max(chapter.startPage, next - 1) : Math.max(chapter.startPage, totalPages || chapter.startPage);
